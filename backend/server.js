@@ -7,35 +7,28 @@ import { dirname } from 'path';
 import connectDB from './config/database.js';
 import productRoutes from './routes/products.js';
 
-// ES modules equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment variables
 dotenv.config();
 
 const app = express();
-
-// Connect to MongoDB
 connectDB();
 
-// Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' ? false : ['http://localhost:3000', 'http://localhost:5173'],
   credentials: true
 }));
 app.use(express.json());
 
-// Add request logging middleware
+
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
-// Routes
 app.use('/api/products', productRoutes);
 
-// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
     message: 'Product Analytics API is running',
@@ -52,7 +45,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 404 handler
 app.use('*', (req, res) => {
   console.log(`404 - Route not found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({

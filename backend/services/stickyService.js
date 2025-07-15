@@ -20,7 +20,6 @@ const TARGET_PRODUCTS = ['2142', '2181', '834'];
 
 export const getTargetProducts = () => TARGET_PRODUCTS;
 
-// Add debug logging to see what's happening
 export const fetchProducts = async () => {
   try {
     console.log('Starting fetchProducts...');
@@ -63,14 +62,13 @@ export const fetchProducts = async () => {
   }
 };
 
-// Add debug logging to revenue fetching
 export const fetchProductRevenue = async (productId) => {
   try {
     console.log(`Fetching revenue for product: ${productId}`);
     
     const api = createApiClient();
     
-    // Calculate last 3 days
+    
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - 3);
