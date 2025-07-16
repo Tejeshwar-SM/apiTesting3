@@ -40,6 +40,28 @@ const productSchema = new mongoose.Schema({
     default: 0
   },
   
+  // Financial calculations
+  refundRate: {
+    type: Number,
+    default: 15 // 15% default refund rate
+  },
+  totalRefunds: {
+    type: Number,
+    default: 0
+  },
+  netRevenue: {
+    type: Number,
+    default: 0
+  },
+  totalCosts: {
+    type: Number,
+    default: 0
+  },
+  profitLoss: {
+    type: Number,
+    default: 0
+  },
+  
   profitMargin: {
     type: Number,
     default: 0
@@ -61,11 +83,33 @@ const productSchema = new mongoose.Schema({
   timestamps: true
 });
 
-productSchema.pre('save', function(next) {
-  if (this.price > 0) {
-    this.profitMargin = ((this.price - this.cost) / this.price) * 100;
-  }
-  next();
-});
+// Static method to calculate all financial metrics
+productSchema.statics.calculateFinancials = function(productData) {
+  const grossRevenue = productData.totalRevenue || 0; // Gross revenue from Sticky
+  const refundRate = productData.refundRate || 15;
+  
+  // Step 1: Calculate refunds (15% of GROSS revenue)
+  const totalRefunds = grossRevenue * (refundRate / 100);
+  
+  // Step 2: Calculate net revenue (gross - refunds)
+  const netRevenue = grossRevenue - totalRefunds;
+  
+  // Step 3: Calculate total costs (10% of NET revenue) 
+  const totalCosts = netRevenue * 0.10;
+  
+  // Step 4: Calculate P&L (net revenue - total costs)
+  const profitLoss = netRevenue - totalCosts;
+  
+  // Step 5: Calculate profit margin based on net revenue
+  const profitMargin = netRevenue > 0 ? (profitLoss / netRevenue) * 100 : 0;
+  
+  return {
+    totalRefunds: Math.round(totalRefunds * 100) / 100,
+    netRevenue: Math.round(netRevenue * 100) / 100,
+    totalCosts: Math.round(totalCosts * 100) / 100,
+    profitLoss: Math.round(profitLoss * 100) / 100,
+    profitMargin: Math.round(profitMargin * 100) / 100
+  };
+};
 
 export default mongoose.model('Product', productSchema);

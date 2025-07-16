@@ -10,31 +10,29 @@ const createApiClient = () => {
     headers: {
       'Content-Type': 'application/json'
     },
-    timeout: 30000
+    timeout: 60000
   });
 };
 
-
 const TARGET_PRODUCTS = ['2142', '2181', '834'];
-
 
 export const getTargetProducts = () => TARGET_PRODUCTS;
 
 export const fetchProducts = async () => {
   try {
-    console.log('Starting fetchProducts...');
-    console.log('API Base URL:', process.env.STICKY_BASE_URL);
-    console.log('Username:', process.env.STICKY_USERNAME);
-    console.log('Target Products:', TARGET_PRODUCTS);
+    console.log('🔍 Starting fetchProducts...');
+    console.log('📍 API Base URL:', process.env.STICKY_BASE_URL);
+    console.log('👤 Username:', process.env.STICKY_USERNAME);
+    console.log('🎯 Target Products:', TARGET_PRODUCTS);
     
     const api = createApiClient();
     
-    console.log('Making API request to /product_index...');
+    console.log('📡 Making API request to /product_index...');
     const response = await api.post('/product_index', {
       product_id: TARGET_PRODUCTS
     });
 
-    console.log('Raw API Response:', {
+    console.log('📥 Raw API Response:', {
       status: response.status,
       statusText: response.statusText,
       responseCode: response.data?.response_code,
@@ -42,21 +40,21 @@ export const fetchProducts = async () => {
     });
 
     if (response.data.response_code !== '100') {
-      console.error('API returned error code:', response.data.response_code);
-      console.error('Full response:', JSON.stringify(response.data, null, 2));
+      console.error('❌ API returned error code:', response.data.response_code);
+      console.error('📄 Full response:', JSON.stringify(response.data, null, 2));
       throw new Error(`API Error: ${response.data.response_code} - ${response.data.message || 'Unknown error'}`);
     }
 
     const products = response.data.products || {};
-    console.log('Products fetched successfully:', Object.keys(products).length);
-    console.log('Product IDs returned:', Object.keys(products));
+    console.log('✅ Products fetched successfully:', Object.keys(products).length);
+    console.log('🆔 Product IDs returned:', Object.keys(products));
 
     return products;
   } catch (error) {
-    console.error('Error in fetchProducts:', error.message);
+    console.error('❌ Error in fetchProducts:', error.message);
     if (error.response) {
-      console.error('Error Response Status:', error.response.status);
-      console.error('Error Response Data:', error.response.data);
+      console.error('📊 Error Response Status:', error.response.status);
+      console.error('📄 Error Response Data:', error.response.data);
     }
     throw error;
   }
@@ -64,14 +62,14 @@ export const fetchProducts = async () => {
 
 export const fetchProductRevenue = async (productId) => {
   try {
-    console.log(`Fetching revenue for product: ${productId}`);
+    console.log(`📊 Fetching revenue for product: ${productId}`);
     
     const api = createApiClient();
     
-    
+    // Calculate last 5 days
     const endDate = new Date();
     const startDate = new Date();
-    startDate.setDate(endDate.getDate() - 3);
+    startDate.setDate(endDate.getDate() - 5);
     
     const formatDate = (date) => {
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -85,7 +83,7 @@ export const fetchProductRevenue = async (productId) => {
       end: formatDate(endDate)
     };
 
-    console.log(`Date range for product ${productId}:`, dateRange);
+    console.log(`📅 Date range for product ${productId}:`, dateRange);
 
     const requestData = {
       campaign_id: 'all',
@@ -96,11 +94,11 @@ export const fetchProductRevenue = async (productId) => {
       search_type: 'all'
     };
 
-    console.log('Order find request:', requestData);
+    console.log('📡 Order find request:', requestData);
 
     const response = await api.post('/order_find', requestData);
 
-    console.log(`Order response for ${productId}:`, {
+    console.log(`📥 Order response for ${productId}:`, {
       status: response.status,
       responseCode: response.data?.response_code,
       totalOrders: response.data?.total_orders,
@@ -108,7 +106,7 @@ export const fetchProductRevenue = async (productId) => {
     });
 
     if (response.data.response_code !== '100') {
-      console.warn(`Order find returned: ${response.data.response_code} for product ${productId}`);
+      console.warn(`⚠️ Order find returned: ${response.data.response_code} for product ${productId}`);
       return {
         totalOrders: 0,
         orderIds: [],
@@ -122,7 +120,7 @@ export const fetchProductRevenue = async (productId) => {
       dateRange
     };
 
-    console.log(`Revenue data for ${productId}:`, {
+    console.log(`✅ Revenue data for ${productId}:`, {
       orders: result.totalOrders,
       orderIds: result.orderIds.length
     });
@@ -130,15 +128,14 @@ export const fetchProductRevenue = async (productId) => {
     return result;
 
   } catch (error) {
-    console.error(`Error fetching revenue for product ${productId}:`, error.message);
+    console.error(`❌ Error fetching revenue for product ${productId}:`, error.message);
     throw error;
   }
 };
 
-
 export const fetchOrderDetails = async (orderIds) => {
   try {
-    console.log(`Processing ${orderIds.length} orders...`);
+    console.log(`📋 Processing ${orderIds.length} orders...`);
     
     if (orderIds.length === 0) {
       return { totalRevenue: 0, totalQuantity: 0 };
@@ -148,7 +145,7 @@ export const fetchOrderDetails = async (orderIds) => {
     let totalRevenue = 0;
     let totalQuantity = 0;
 
-    
+    // Process in smaller batches for better performance
     for (let i = 0; i < orderIds.length; i += 5) {
       const batch = orderIds.slice(i, i + 5);
       
@@ -165,12 +162,12 @@ export const fetchOrderDetails = async (orderIds) => {
             };
           }
         } catch (orderError) {
-          console.error(`Error fetching order ${orderId}:`, orderError.message);
+          console.error(`⚠️ Error fetching order ${orderId}:`, orderError.message);
         }
         return { revenue: 0, quantity: 0 };
       });
 
-      
+      // Wait for batch to complete
       const batchResults = await Promise.all(batchPromises);
       
       // Aggregate results
@@ -180,14 +177,14 @@ export const fetchOrderDetails = async (orderIds) => {
       });
     }
 
-    console.log(`Order processing complete: Revenue: $${totalRevenue}, Quantity: ${totalQuantity}`);
+    console.log(`✅ Order processing complete: Revenue: $${totalRevenue}, Quantity: ${totalQuantity}`);
 
     return {
       totalRevenue,
       totalQuantity
     };
   } catch (error) {
-    console.error('Error fetching order details:', error);
+    console.error('❌ Error fetching order details:', error);
     throw error;
   }
 };

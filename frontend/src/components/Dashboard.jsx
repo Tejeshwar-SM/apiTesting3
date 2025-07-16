@@ -114,7 +114,7 @@ const Dashboard = () => {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Product Analytics</h1>
               <p className="mt-1 text-sm text-gray-500">
-                Last 5 days • Updated {formatDate(analytics?.timestamp)}
+                Last 3 days
               </p>
             </div>
             <button
@@ -142,7 +142,50 @@ const Dashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                    <span className="text-white font-bold">$</span>
+                  </div>
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Gross Revenue</dt>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {formatCurrency(summary.totalGrossRevenue)}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
+                    <span className="text-white font-bold">-</span>
+                  </div>
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Refunds</dt>
+                    <dd className="text-lg font-medium text-gray-900">
+                      -{formatCurrency(summary.totalRefunds)}
+                    </dd>
+                    <dd className="text-xs text-gray-500">
+                      ({summary.refundRate || 15}%)
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="p-5">
               <div className="flex items-center">
@@ -153,9 +196,12 @@ const Dashboard = () => {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Revenue</dt>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Net Revenue</dt>
                     <dd className="text-lg font-medium text-gray-900">
-                      {formatCurrency(summary.totalRevenue)}
+                      {formatCurrency(summary.totalNetRevenue)}
+                    </dd>
+                    <dd className="text-xs text-gray-500">
+                      (After refunds)
                     </dd>
                   </dl>
                 </div>
@@ -167,35 +213,18 @@ const Dashboard = () => {
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                    <span className="text-white font-bold">#</span>
+                  <div className="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center">
+                    <span className="text-white font-bold">C</span>
                   </div>
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Orders</dt>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Total Costs</dt>
                     <dd className="text-lg font-medium text-gray-900">
-                      {summary.totalOrders || 0}
+                      -{formatCurrency(summary.totalCosts)}
                     </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
-                    <span className="text-white font-bold">📊</span>
-                  </div>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Avg Order Value</dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {formatCurrency(summary.averageOrderValue)}
+                    <dd className="text-xs text-gray-500">
+                      ({summary.costRate || 10}% of net)
                     </dd>
                   </dl>
                 </div>
@@ -208,14 +237,17 @@ const Dashboard = () => {
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
-                    <span className="text-white font-bold">%</span>
+                    <span className="text-white font-bold">📈</span>
                   </div>
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Profit Margin</dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {summary.profitMargin || 0}%
+                    <dt className="text-sm font-medium text-gray-500 truncate">Total P&L</dt>
+                    <dd className={`text-lg font-medium ${summary.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(summary.totalProfit)}
+                    </dd>
+                    <dd className="text-xs text-gray-500">
+                      (Net - Costs)
                     </dd>
                   </dl>
                 </div>
@@ -228,9 +260,9 @@ const Dashboard = () => {
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
           <div className="px-4 py-5 sm:px-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900">Product Performance</h3>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500">
-              Detailed performance metrics for each product
-            </p>
+            {/* <p className="mt-1 max-w-2xl text-sm text-gray-500">
+              Product name, price, orders, gross revenue, refunds, net revenue, total costs, P&L and status
+            </p> */}
           </div>
           
           {productsList.length > 0 ? (
@@ -239,7 +271,7 @@ const Dashboard = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Product
+                      Product Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Price
@@ -248,10 +280,19 @@ const Dashboard = () => {
                       Orders
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Revenue
+                      Gross Revenue
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      AOV
+                      Refunds (15%)
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Net Revenue
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total Costs (10%)
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      P&L
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -262,26 +303,32 @@ const Dashboard = () => {
                   {productsList.map((product) => (
                     <tr key={product.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {product.name || 'Unknown Product'}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            SKU: {product.sku || 'N/A'}
-                          </div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {product.name || 'Unknown Product'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(product.profitPerUnit)}
+                        {formatCurrency(product.price)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {product.orders || 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(product.revenue)}
+                        {formatCurrency(product.grossRevenue || 0)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
+                        -{formatCurrency(product.refunds || 0)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(product.averageOrderValue)}
+                        {formatCurrency(product.netRevenue || 0)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-orange-600">
+                        -{formatCurrency(product.totalCosts || 0)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`text-sm font-medium ${(product.profitLoss || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatCurrency(product.profitLoss || 0)}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {(product.orders || 0) > 0 ? (
@@ -304,6 +351,39 @@ const Dashboard = () => {
               <p className="text-gray-500">No products found. Click "Sync Data" to fetch products from Sticky.io.</p>
             </div>
           )}
+        </div>
+
+        {/* Financial Summary */}
+        <div className="mt-8 bg-white shadow overflow-hidden sm:rounded-md">
+          <div className="px-4 py-5 sm:px-6">
+            <h3 className="text-lg leading-6 font-medium text-gray-900">Financial Summary</h3>
+          </div>
+          <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
+            <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 lg:grid-cols-5">
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Gross Revenue</dt>
+                <dd className="mt-1 text-sm text-gray-900">{formatCurrency(summary.totalGrossRevenue)}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Total Refunds</dt>
+                <dd className="mt-1 text-sm text-red-600">-{formatCurrency(summary.totalRefunds)}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Net Revenue</dt>
+                <dd className="mt-1 text-sm text-blue-600">{formatCurrency(summary.totalNetRevenue)}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Total Costs</dt>
+                <dd className="mt-1 text-sm text-orange-600">-{formatCurrency(summary.totalCosts)}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Net Profit</dt>
+                <dd className={`mt-1 text-sm font-semibold ${summary.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(summary.totalProfit)}
+                </dd>
+              </div>
+            </dl>
+          </div>
         </div>
       </div>
     </div>
