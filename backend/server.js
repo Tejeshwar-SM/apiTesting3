@@ -8,6 +8,10 @@ import connectDB from './config/database.js';
 import productRoutes from './routes/products.js';
 import redisService from './services/redisService.js';
 import cacheService from './services/cacheService.js';
+import jobRoutes from './routes/jobs.js';
+import queueService from './services/queueService.js';
+import { startWorkers, stopWorkers } from './workers/workerManager.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -19,6 +23,8 @@ const app = express();
 // Connect to databases
 connectDB();
 redisService.connect();
+queueService.initializeQueues();
+const workers = startWorkers();
 
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' ? false : ['http://localhost:3000', 'http://localhost:5173'],
@@ -32,6 +38,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/api/products', productRoutes);
+app.use('/api/jobs', jobRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {
@@ -69,9 +76,10 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('Shutting down gracefully...');
+  console.log('Shutting down...');
+  await stopWorkers();
+  await queueService.closeQueues();
   await redisService.disconnect();
   await mongoose.connection.close();
   process.exit(0);

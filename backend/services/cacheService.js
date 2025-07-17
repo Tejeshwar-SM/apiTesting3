@@ -4,13 +4,13 @@ import CachedData from '../models/CachedData.js';
 
 // Cache TTL configurations (in seconds)
 const CACHE_TTL = {
-  REDIS_ANALYTICS: 15 * 60,      // 15 minutes
-  REDIS_PRODUCTS: 30 * 60,       // 30 minutes  
-  REDIS_REVENUE: 20 * 60,        // 20 minutes
+  REDIS_ANALYTICS: 15 * 60,
+  REDIS_PRODUCTS: 30 * 60,
+  REDIS_REVENUE: 20 * 60,
   
-  MONGODB_PRODUCTS: 6 * 60 * 60,    // 6 hours
-  MONGODB_REVENUE: 4 * 60 * 60,     // 4 hours
-  MONGODB_ANALYTICS: 8 * 60 * 60    // 8 hours
+  MONGODB_PRODUCTS: 6 * 60 * 60,
+  MONGODB_REVENUE: 4 * 60 * 60,
+  MONGODB_ANALYTICS: 8 * 60 * 60
 };
 
 // Get products with multi-layer caching
@@ -18,7 +18,7 @@ const getProductsWithCache = async () => {
   const cacheKey = 'sticky_products';
   
   try {
-    // Layer 1: Check Redis first (fastest)
+    //Check Redis first
     console.log('Checking Redis for products...');
     const redisData = await redisService.get(cacheKey);
     if (redisData) {
@@ -26,7 +26,7 @@ const getProductsWithCache = async () => {
       return redisData;
     }
 
-    // Layer 2: Check MongoDB (medium speed)
+    //Check MongoDB
     console.log('Redis miss, checking MongoDB for products...');
     const mongoDoc = await CachedData.findOne({ 
       cacheKey,
@@ -41,7 +41,7 @@ const getProductsWithCache = async () => {
       return mongoDoc.data;
     }
 
-    // Layer 3: Fetch from Sticky.io API (slowest)
+    //Fetch from Sticky.io API
     console.log('MongoDB miss, fetching fresh products from Sticky.io...');
     const freshData = await stickyService.fetchProducts();
     
@@ -79,7 +79,7 @@ const getProductRevenueWithCache = async (productId) => {
   const cacheKey = `product_revenue_${productId}`;
   
   try {
-    // Layer 1: Check Redis
+    //Check Redis
     console.log(`Checking Redis for product ${productId} revenue...`);
     const redisData = await redisService.get(cacheKey);
     if (redisData) {
@@ -87,7 +87,7 @@ const getProductRevenueWithCache = async (productId) => {
       return redisData;
     }
 
-    // Layer 2: Check MongoDB
+    //Check MongoDB
     console.log(`Redis miss, checking MongoDB for product ${productId} revenue...`);
     const mongoDoc = await CachedData.findOne({
       cacheKey,
@@ -101,7 +101,7 @@ const getProductRevenueWithCache = async (productId) => {
       return mongoDoc.data;
     }
 
-    // Layer 3: Fetch from Sticky.io API
+    //Fetch from Sticky.io API
     console.log(`MongoDB miss, fetching fresh revenue for product ${productId}...`);
     const freshData = await stickyService.fetchProductRevenue(productId);
     
@@ -140,10 +140,10 @@ const cacheAnalyticsSummary = async (summaryData) => {
   const cacheKey = 'analytics_summary';
   
   try {
-    // Store in Redis (short-term)
+    // Store in Redis
     await redisService.set(cacheKey, summaryData, CACHE_TTL.REDIS_ANALYTICS);
     
-    // Store in MongoDB (longer-term)
+    // Store in MongoDB
     const expiresAt = new Date(Date.now() + CACHE_TTL.MONGODB_ANALYTICS * 1000);
     
     await CachedData.findOneAndUpdate(
@@ -170,12 +170,12 @@ const cacheAnalyticsSummary = async (summaryData) => {
   }
 };
 
-// Get cached analytics summary
+
 const getAnalyticsSummaryWithCache = async () => {
   const cacheKey = 'analytics_summary';
   
   try {
-    // Check Redis first
+    
     console.log('Checking Redis for analytics summary...');
     const redisData = await redisService.get(cacheKey);
     if (redisData) {
@@ -183,7 +183,7 @@ const getAnalyticsSummaryWithCache = async () => {
       return redisData;
     }
 
-    // Check MongoDB
+    
     console.log('Redis miss, checking MongoDB for analytics summary...');
     const mongoDoc = await CachedData.findOne({
       cacheKey,
@@ -235,7 +235,6 @@ const invalidateCacheOnSync = async () => {
   }
 };
 
-// Get cache statistics
 const getCacheStats = async () => {
   try {
     const redisStats = await redisService.getStats();

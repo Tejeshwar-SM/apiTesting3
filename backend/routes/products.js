@@ -10,27 +10,17 @@ router.use((req, res, next) => {
   next();
 });
 
-router.get('/debug-env', (req, res) => {
-  res.json({
-    STICKY_BASE_URL: process.env.STICKY_BASE_URL || 'NOT SET',
-    STICKY_USERNAME: process.env.STICKY_USERNAME || 'NOT SET', 
-    STICKY_PASSWORD: process.env.STICKY_PASSWORD ? 'SET' : 'NOT SET',
-    REDIS_PASSWORD: process.env.REDIS_PASSWORD ? 'SET' : 'NOT SET',
-    NODE_ENV: process.env.NODE_ENV || 'NOT SET'
-  });
-});
-
 router.get('/test-sticky', async (req, res) => {
   try {
     console.log('Testing Sticky.io API connection with caching...');
-    
+
     const testResult = await cacheService.getProductsWithCache();
-    
+
     console.log('Test response received:', {
       productCount: Object.keys(testResult || {}).length,
       productIds: Object.keys(testResult || {})
     });
-    
+
     res.json({
       success: true,
       message: 'Sticky.io API test successful with caching',
@@ -41,7 +31,7 @@ router.get('/test-sticky', async (req, res) => {
         sampleResponse: testResult
       }
     });
-    
+
   } catch (error) {
     console.error('Sticky.io test failed:', error);
     res.status(500).json({
@@ -58,13 +48,13 @@ router.get('/test-sticky', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const targetProducts = stickyService.getTargetProducts();
-    const products = await Product.find({ 
+    const products = await Product.find({
       product_id: { $in: targetProducts },
-      isActive: true 
+      isActive: true
     }).sort({ totalRevenue: -1 });
-    
+
     console.log(`Returning ${products.length} products from database`);
-    
+
     res.json({
       success: true,
       data: products,
@@ -87,7 +77,7 @@ router.get('/', async (req, res) => {
 router.get('/find', async (req, res) => {
   try {
     const { ids } = req.query;
-    
+
     if (!ids) {
       return res.status(400).json({
         success: false,
@@ -97,12 +87,12 @@ router.get('/find', async (req, res) => {
 
     const productIds = ids.split(',').map(id => id.trim());
     console.log(`Finding products by IDs:`, productIds);
-    
-    const products = await Product.find({ 
+
+    const products = await Product.find({
       product_id: { $in: productIds },
-      isActive: true 
+      isActive: true
     }).sort({ totalRevenue: -1 });
-    
+
     res.json({
       success: true,
       data: products,
@@ -125,14 +115,14 @@ router.get('/find', async (req, res) => {
 router.post('/sync', async (req, res) => {
   try {
     console.log('Starting optimized sync with cache invalidation...');
-    
+
     // Clear all cache before sync
     await cacheService.invalidateCacheOnSync();
-    
+
     // Fetch fresh data (this will now cache automatically)
     const stickyProducts = await cacheService.getProductsWithCache();
     const targetProducts = stickyService.getTargetProducts();
-    
+
     let syncedCount = 0;
     let updatedCount = 0;
     let processedProducts = [];
@@ -151,10 +141,9 @@ router.post('/sync', async (req, res) => {
 
       try {
         console.log(`Processing target product: ${productId} - ${productData.product_name}`);
-        
-        // Use cached revenue data
+
         const revenueData = await cacheService.getProductRevenueWithCache(productId);
-        
+
         let totalRevenue = 0;
         let totalQuantity = 0;
 
@@ -168,12 +157,12 @@ router.post('/sync', async (req, res) => {
           console.log(`No orders found for product ${productId} in the last 5 days`);
         }
 
-        const averageOrderValue = revenueData.totalOrders > 0 
-          ? totalRevenue / revenueData.totalOrders 
+        const averageOrderValue = revenueData.totalOrders > 0
+          ? totalRevenue / revenueData.totalOrders
           : 0;
 
         const existingProduct = await Product.findOne({ product_id: productId });
-        
+
         const baseProductData = {
           name: productData.product_name || 'Unknown Product',
           sku: productData.product_sku || 'NO-SKU',
@@ -210,10 +199,10 @@ router.post('/sync', async (req, res) => {
         const product = await Product.findOneAndUpdate(
           { product_id: productId },
           completeProductData,
-          { 
-            upsert: true, 
+          {
+            upsert: true,
             new: true,
-            runValidators: true 
+            runValidators: true
           }
         );
 
@@ -242,7 +231,7 @@ router.post('/sync', async (req, res) => {
           profitMargin: financials.profitMargin,
           dateRange: revenueData.dateRange
         });
-        
+
       } catch (productError) {
         console.error(`Error processing product ${productId}:`, productError.message);
         errors.push({
@@ -255,7 +244,7 @@ router.post('/sync', async (req, res) => {
 
     const totalProcessed = syncedCount + updatedCount;
     console.log(`Sync completed: ${syncedCount} new, ${updatedCount} updated, ${skippedCount} skipped, ${errors.length} errors`);
-    
+
     res.json({
       success: true,
       message: 'Product sync completed successfully with caching',
@@ -290,10 +279,9 @@ router.post('/sync', async (req, res) => {
 router.get('/analytics', async (req, res) => {
   try {
     const targetProducts = stickyService.getTargetProducts();
-    
-    // Check for cached analytics first
+
     let cachedAnalytics = await cacheService.getAnalyticsSummaryWithCache();
-    
+
     if (cachedAnalytics) {
       console.log('Returning cached analytics data');
       return res.json({
@@ -303,12 +291,11 @@ router.get('/analytics', async (req, res) => {
         timestamp: new Date().toISOString()
       });
     }
-    
-    // Generate fresh analytics
+
     console.log('Generating fresh analytics...');
-    const products = await Product.find({ 
+    const products = await Product.find({
       product_id: { $in: targetProducts },
-      isActive: true 
+      isActive: true
     }).sort({ totalRevenue: -1 });
 
     const totalGrossRevenue = products.reduce((sum, p) => sum + p.totalRevenue, 0);
@@ -360,7 +347,7 @@ router.get('/analytics', async (req, res) => {
     await cacheService.cacheAnalyticsSummary(analyticsData);
 
     console.log(`Analytics calculated for ${products.length} products and cached`);
-    
+
     res.json({
       success: true,
       data: analyticsData,
@@ -381,7 +368,7 @@ router.get('/analytics', async (req, res) => {
 router.get('/cache-stats', async (req, res) => {
   try {
     const stats = await cacheService.getCacheStats();
-    
+
     res.json({
       success: true,
       data: stats,
